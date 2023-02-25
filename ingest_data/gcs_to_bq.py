@@ -2,14 +2,14 @@ from pathlib import Path
 
 import pandas as pd
 from prefect import flow, task
-from prefect_gcp.cloud_storage import GcsBucket
 from prefect_gcp import GcpCredentials
+from prefect_gcp.cloud_storage import GcsBucket
 
 
-@task(retries=1)
+@task(retries=2)
 def extract_from_gcs(color: str, year: int, month: int) -> Path:
     """Download trip data from GCS"""
-    gcs_path = f"data/{color}/{color}_tripdata_{year}-{month:02}.parquet"
+    gcs_path = f"data/{color}/{color}_tripdata_{year}-{month:02}"
 
     gcs_block = GcsBucket.load("zoomcamp-bucket")
 
@@ -45,7 +45,7 @@ def write_bq(df: pd.DataFrame) -> None:
     gcp_credentials_block = GcpCredentials.load("zoom-gcp-creds")
 
     df.to_gbq(
-        destination_table="dezoomcamp.rides",
+        destination_table="analysis.rides_green",
         project_id="taxi-rides-ny-375722",
         credentials=gcp_credentials_block.get_credentials_from_service_account(),
         chunksize=500_000,
@@ -56,13 +56,16 @@ def write_bq(df: pd.DataFrame) -> None:
 @flow(log_prints=True)
 def etl_gcs_to_bq():
     """Main ETL flow to load data into Big Query"""
-    color = "yellow"
-    year = 2019
-    month = 3
-
-    path = extract_from_gcs(color, year, month)
-    df = transform(path)
-    write_bq(df)
+    colors = ["green"]
+    years = [2019, 2020]
+    months = list(range(1,13))
+    
+    for color in colors:
+        for year in years:
+            for month in months:
+                path = extract_from_gcs(color, year, month)
+                df = transform(path)
+                write_bq(df)
 
 
 if __name__ == "__main__":
