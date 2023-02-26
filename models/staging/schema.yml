@@ -1,0 +1,6 @@
+version: 2
+
+source:
+  - name: staging
+    database: taxi-rides-ny-375722
+    schema: analysis
