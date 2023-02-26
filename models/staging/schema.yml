@@ -1,6 +1,11 @@
 version: 2
 
-source:
+sources:
   - name: staging
     database: taxi-rides-ny-375722
     schema: analysis
+
+    tables:
+      - name: rides
+      - name: rides_green
+      
